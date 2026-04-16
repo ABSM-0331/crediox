@@ -1,0 +1,9 @@
+RewriteEngine On
+
+# ❌ ELIMINA RewriteBase
+# RewriteBase /panel/public/
+
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+
+RewriteRule ^ index.php [QSA,L]
