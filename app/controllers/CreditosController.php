@@ -269,6 +269,53 @@ class CreditosController
         exit;
     }
 
+    public function eliminarCredito(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Content-Type: application/json');
+            http_response_code(405);
+            echo json_encode(['success' => false, 'mensaje' => 'Método no permitido']);
+            exit;
+        }
+
+        if (!isset($_SESSION['usuario_id'])) {
+            header('Content-Type: application/json');
+            http_response_code(401);
+            echo json_encode(['success' => false, 'mensaje' => 'No autorizado']);
+            exit;
+        }
+
+        if ((int)($_SESSION['usuario_rol'] ?? 0) !== 1) {
+            header('Content-Type: application/json');
+            http_response_code(403);
+            echo json_encode(['success' => false, 'mensaje' => 'Solo un administrador puede eliminar créditos']);
+            exit;
+        }
+
+        try {
+            $idCredito = (int)($_POST['idcredito'] ?? 0);
+            if ($idCredito <= 0) {
+                throw new Exception('ID de crédito inválido');
+            }
+
+            $resultado = $this->creditosService->eliminarCreditoCascada($idCredito);
+
+            header('Content-Type: application/json');
+            echo json_encode([
+                'success' => true,
+                'mensaje' => 'Crédito eliminado correctamente',
+                'resultado' => $resultado,
+            ]);
+        } catch (Throwable $e) {
+            header('Content-Type: application/json');
+            http_response_code(400);
+            echo json_encode([
+                'success' => false,
+                'mensaje' => $e->getMessage(),
+            ]);
+        }
+    }
+
     public function obtener(): void
     {
         if (!isset($_SESSION['usuario_id'])) {

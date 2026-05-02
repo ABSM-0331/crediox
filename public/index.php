@@ -97,6 +97,33 @@ switch ($uri) {
     case 'eliminar-cobratario':
         (new CobratarioController())->eliminarCobratario();
         break;
+    case 'cobratarios/cliente/reasignar':
+        (new CobratarioController())->reasignarCliente();
+        break;
+    case 'cobratarios/cliente/quitar':
+        (new CobratarioController())->quitarCliente();
+        break;
+    case 'cobratarios/credito/asignar':
+        (new CobratarioController())->asignarCredito();
+        break;
+    case 'administradores':
+        (new AdministradoresController())->index();
+        break;
+    case 'nuevo-administrador':
+        (new AdministradoresController())->vistaCrearAdministrador();
+        break;
+    case 'crear-administrador':
+        (new AdministradoresController())->crearAdministrador();
+        break;
+    case 'editar-administrador':
+        (new AdministradoresController())->vistaEditarAdministrador();
+        break;
+    case 'actualizar-administrador':
+        (new AdministradoresController())->actualizarAdministrador();
+        break;
+    case 'eliminar-administrador':
+        (new AdministradoresController())->eliminarAdministrador();
+        break;
     case 'usuarios':
         (new UsuariosController())->index();
         break;
@@ -135,6 +162,9 @@ switch ($uri) {
         break;
     case 'creditos/guardar':
         (new CreditosController())->guardar();
+        break;
+    case 'creditos/eliminar':
+        (new CreditosController())->eliminarCredito();
         break;
     case 'creditos/tipos/guardar':
         (new CreditosController())->guardarTipo();

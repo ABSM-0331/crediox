@@ -91,7 +91,7 @@ $fotoActual = !empty($cobratario['foto_ruta']) ? '/panel/public/' . ltrim($cobra
             <div class="foto-upload-area">
                 <div class="foto-preview" id="cobFotoPreview">
                     <?php if ($fotoActual): ?>
-                        <img src="<?= htmlspecialchars($fotoActual) ?>" alt="Foto del cobratario" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;">
+                        <img src="/panel/public/<?= htmlspecialchars($fotoActual) ?>" alt="Foto del cobratario" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;">
                     <?php else: ?>
                         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                             <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>

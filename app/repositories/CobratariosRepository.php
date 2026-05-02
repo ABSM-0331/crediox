@@ -83,6 +83,8 @@ class CobratariosRepository
                     FROM creditos c
                     INNER JOIN personas cli ON cli.idpersona = c.idcliente AND cli.activo = 1
                     INNER JOIN personas cobf ON cobf.idpersona = c.idcobratario AND cobf.activo = 1
+                    WHERE c.estado = 'activo'
+                      AND c.saldo_pendiente > 0
                     GROUP BY c.idcobratario
                 ) cred ON cred.idcobratario = p.idpersona
                 LEFT JOIN (
@@ -102,6 +104,135 @@ class CobratariosRepository
 
         $stmt = $this->db->query($sql);
         return $stmt->fetchAll();
+    }
+
+    public function obtenerClientesAsignadosActivosPorCobratario(): array
+    {
+        $sql = "SELECT
+                    c.idcobratario,
+                    c.idcliente,
+                    CONCAT(cli.ap_paterno, ' ', cli.ap_materno, ' ', cli.nombres) AS cliente,
+                    cli.telefono,
+                    cli.email,
+                    COUNT(c.idcredito) AS creditos_activos,
+                    COALESCE(SUM(c.saldo_pendiente), 0) AS saldo_pendiente
+                FROM creditos c
+                INNER JOIN personas cli ON cli.idpersona = c.idcliente AND cli.activo = 1
+                INNER JOIN personas cob ON cob.idpersona = c.idcobratario AND cob.idrol = 3 AND cob.activo = 1
+                WHERE c.idcobratario IS NOT NULL
+                  AND c.estado = 'activo'
+                  AND c.saldo_pendiente > 0
+                GROUP BY c.idcobratario, c.idcliente, cli.ap_paterno, cli.ap_materno, cli.nombres, cli.telefono, cli.email
+                ORDER BY cob.ap_paterno, cob.ap_materno, cob.nombres, cli.ap_paterno, cli.ap_materno, cli.nombres";
+
+        $stmt = $this->db->query($sql);
+        return $stmt->fetchAll();
+    }
+
+    public function reasignarClienteActivo(int $idCliente, int $idCobratarioActual, int $idCobratarioNuevo): int
+    {
+        if ($idCobratarioActual === $idCobratarioNuevo) {
+            throw new Exception('El cobratario destino debe ser diferente al actual');
+        }
+
+        $sqlValida = "SELECT idpersona
+                      FROM personas
+                      WHERE idpersona = :idcobratario
+                        AND idrol = 3
+                        AND activo = 1
+                      LIMIT 1";
+        $stmtValida = $this->db->prepare($sqlValida);
+        $stmtValida->execute(['idcobratario' => $idCobratarioNuevo]);
+        if (!$stmtValida->fetch()) {
+            throw new Exception('Cobratario destino no válido');
+        }
+
+        $sql = "UPDATE creditos
+                SET idcobratario = :idcobratario_nuevo
+                WHERE idcliente = :idcliente
+                  AND idcobratario = :idcobratario_actual
+                  AND estado = 'activo'
+                  AND saldo_pendiente > 0";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([
+            'idcobratario_nuevo' => $idCobratarioNuevo,
+            'idcliente' => $idCliente,
+            'idcobratario_actual' => $idCobratarioActual,
+        ]);
+
+        return $stmt->rowCount();
+    }
+
+    public function quitarClienteActivo(int $idCliente, int $idCobratarioActual): int
+    {
+        $sql = "UPDATE creditos
+                SET idcobratario = NULL
+                WHERE idcliente = :idcliente
+                  AND idcobratario = :idcobratario_actual
+                  AND estado = 'activo'
+                  AND saldo_pendiente > 0";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([
+            'idcliente' => $idCliente,
+            'idcobratario_actual' => $idCobratarioActual,
+        ]);
+
+        return $stmt->rowCount();
+    }
+
+    public function obtenerCreditosActivosSinCobratario(): array
+    {
+        $sql = "SELECT
+                    c.idcredito,
+                    c.idcliente,
+                    c.tipo,
+                    c.monto,
+                    c.saldo_pendiente,
+                    c.fecha_inicio,
+                    CONCAT(cli.ap_paterno, ' ', cli.ap_materno, ' ', cli.nombres) AS cliente,
+                    cli.telefono,
+                    cli.email
+                FROM creditos c
+                INNER JOIN personas cli ON cli.idpersona = c.idcliente AND cli.activo = 1
+                WHERE c.idcobratario IS NULL
+                  AND c.estado = 'activo'
+                  AND c.saldo_pendiente > 0
+                ORDER BY c.idcredito DESC";
+
+        $stmt = $this->db->query($sql);
+        return $stmt->fetchAll();
+    }
+
+    public function asignarCreditoSinCobratario(int $idCredito, int $idCobratarioDestino): int
+    {
+        $sqlValida = "SELECT idpersona
+                      FROM personas
+                      WHERE idpersona = :idcobratario
+                        AND idrol = 3
+                        AND activo = 1
+                      LIMIT 1";
+        $stmtValida = $this->db->prepare($sqlValida);
+        $stmtValida->execute(['idcobratario' => $idCobratarioDestino]);
+        if (!$stmtValida->fetch()) {
+            throw new Exception('Cobratario destino no válido');
+        }
+
+        $sql = "UPDATE creditos
+                SET idcobratario = :idcobratario
+                WHERE idcredito = :idcredito
+                  AND idcobratario IS NULL
+                  AND estado = 'activo'
+                  AND saldo_pendiente > 0";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([
+            'idcobratario' => $idCobratarioDestino,
+            'idcredito' => $idCredito,
+        ]);
+
+        return $stmt->rowCount();
     }
 
     public function crearCobratario(array $data): int

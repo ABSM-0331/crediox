@@ -77,4 +77,9 @@ class CreditosService
     {
         return $this->creditosRepo->eliminarTipoCredito($idTipo);
     }
+
+    public function eliminarCreditoCascada(int $idCredito): array
+    {
+        return $this->creditosRepo->eliminarCreditoCascada($idCredito);
+    }
 }

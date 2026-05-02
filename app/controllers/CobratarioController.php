@@ -13,8 +13,121 @@ class CobratarioController
         $this->validarAdmin();
 
         $cobratarios = $this->service->obtenerTodosConEstadisticas();
+        $clientesAsignadosRows = $this->service->obtenerClientesAsignadosActivosPorCobratario();
+        $creditosSinAsignar = $this->service->obtenerCreditosActivosSinCobratario();
+        $clientesAsignadosPorCobratario = [];
+        foreach ($clientesAsignadosRows as $fila) {
+            $idCob = (int)($fila['idcobratario'] ?? 0);
+            if (!isset($clientesAsignadosPorCobratario[$idCob])) {
+                $clientesAsignadosPorCobratario[$idCob] = [];
+            }
+            $clientesAsignadosPorCobratario[$idCob][] = $fila;
+        }
         $view = __DIR__ . '/../views/cobratarios/index.php';
         require __DIR__ . '/../views/layouts/app.php';
+    }
+
+    public function reasignarCliente(): void
+    {
+        $this->validarAdmin();
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('location: /panel/public/cobratarios');
+            exit;
+        }
+
+        $idCliente = (int)($_POST['idcliente'] ?? 0);
+        $idCobratarioActual = (int)($_POST['idcobratario_actual'] ?? 0);
+        $idCobratarioNuevo = (int)($_POST['idcobratario_nuevo'] ?? 0);
+
+        if ($idCliente <= 0 || $idCobratarioActual <= 0 || $idCobratarioNuevo <= 0) {
+            $_SESSION['error'] = 'Datos inválidos para reasignar cliente';
+            header('location: /panel/public/cobratarios');
+            exit;
+        }
+
+        try {
+            $movidos = $this->service->reasignarClienteActivo($idCliente, $idCobratarioActual, $idCobratarioNuevo);
+            if ($movidos <= 0) {
+                $_SESSION['error'] = 'No se encontraron créditos activos para reasignar';
+            } else {
+                $_SESSION['success'] = 'Cliente reasignado correctamente';
+            }
+            header('location: /panel/public/cobratarios');
+            exit;
+        } catch (Throwable $e) {
+            $_SESSION['error'] = 'Error al reasignar cliente: ' . $e->getMessage();
+            header('location: /panel/public/cobratarios');
+            exit;
+        }
+    }
+
+    public function quitarCliente(): void
+    {
+        $this->validarAdmin();
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('location: /panel/public/cobratarios');
+            exit;
+        }
+
+        $idCliente = (int)($_POST['idcliente'] ?? 0);
+        $idCobratarioActual = (int)($_POST['idcobratario_actual'] ?? 0);
+
+        if ($idCliente <= 0 || $idCobratarioActual <= 0) {
+            $_SESSION['error'] = 'Datos inválidos para quitar cliente';
+            header('location: /panel/public/cobratarios');
+            exit;
+        }
+
+        try {
+            $movidos = $this->service->quitarClienteActivo($idCliente, $idCobratarioActual);
+            if ($movidos <= 0) {
+                $_SESSION['error'] = 'No se encontraron créditos activos para quitar';
+            } else {
+                $_SESSION['success'] = 'Cliente quitado correctamente del cobratario';
+            }
+            header('location: /panel/public/cobratarios');
+            exit;
+        } catch (Throwable $e) {
+            $_SESSION['error'] = 'Error al quitar cliente: ' . $e->getMessage();
+            header('location: /panel/public/cobratarios');
+            exit;
+        }
+    }
+
+    public function asignarCredito(): void
+    {
+        $this->validarAdmin();
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('location: /panel/public/cobratarios');
+            exit;
+        }
+
+        $idCredito = (int)($_POST['idcredito'] ?? 0);
+        $idCobratarioDestino = (int)($_POST['idcobratario_destino'] ?? 0);
+
+        if ($idCredito <= 0 || $idCobratarioDestino <= 0) {
+            $_SESSION['error'] = 'Datos inválidos para asignar crédito';
+            header('location: /panel/public/cobratarios');
+            exit;
+        }
+
+        try {
+            $movidos = $this->service->asignarCreditoSinCobratario($idCredito, $idCobratarioDestino);
+            if ($movidos <= 0) {
+                $_SESSION['error'] = 'El crédito no estaba disponible para asignación';
+            } else {
+                $_SESSION['success'] = 'Crédito asignado correctamente';
+            }
+            header('location: /panel/public/cobratarios');
+            exit;
+        } catch (Throwable $e) {
+            $_SESSION['error'] = 'Error al asignar crédito: ' . $e->getMessage();
+            header('location: /panel/public/cobratarios');
+            exit;
+        }
     }
 
     public function cobratarios(): array

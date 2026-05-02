@@ -30,6 +30,7 @@ class UsuarioRepository
                     p.email,
                     p.telefono,
                     CASE p.idrol 
+                        WHEN 1 THEN 'Admin'
                         WHEN 2 THEN 'Cliente'
                         WHEN 3 THEN 'Cobratario'
                         ELSE 'Otro'
@@ -53,6 +54,7 @@ class UsuarioRepository
                     CONCAT(p.ap_paterno, ' ', p.ap_materno, ' ', p.nombres) AS nombre,
                     p.email,
                     CASE p.idrol 
+                        WHEN 1 THEN 'Admin'
                         WHEN 2 THEN 'Cliente'
                         WHEN 3 THEN 'Cobratario'
                         ELSE 'Otro'
@@ -110,6 +112,7 @@ class UsuarioRepository
                     p.email,
                     p.telefono,
                     CASE p.idrol 
+                        WHEN 1 THEN 'Admin'
                         WHEN 2 THEN 'Cliente'
                         WHEN 3 THEN 'Cobratario'
                         ELSE 'Otro'
@@ -118,7 +121,7 @@ class UsuarioRepository
                 FROM personas p
                 LEFT JOIN usuarios u ON u.idpersona = p.idpersona
                 WHERE u.idusuario IS NULL
-                AND p.idrol IN (2, 3)
+                AND p.idrol IN (1, 2, 3)
                 AND p.activo = 1
                 ORDER BY p.ap_paterno, p.ap_materno, p.nombres";
 

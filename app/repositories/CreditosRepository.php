@@ -120,7 +120,10 @@ class CreditosRepository
             }
 
             // Generar cada pago
+            $fechaPago = clone $fechaInicio;
             for ($i = 1; $i <= $datos['pagos']; $i++) {
+                $fechaPago = $this->avanzarFechaProgramada($fechaPago, $intervalo);
+
                 // Calcular capital e interés para este pago
                 if ($i == $datos['pagos']) {
                     // Último pago: ajustar para cuadrar exacto
@@ -146,9 +149,6 @@ class CreditosRepository
                     ':monto_programado' => $montoPago,
                     ':saldo_vivo' => max(0, $saldo)
                 ]);
-
-                // Avanzar a la siguiente fecha de pago
-                $fechaPago->add($intervalo);
             }
 
             // Confirmar transacción
@@ -170,6 +170,50 @@ class CreditosRepository
         }
     }
 
+    public function eliminarCreditoCascada(int $idCredito): array
+    {
+        try {
+            $this->db->beginTransaction();
+
+            $stmtExiste = $this->db->prepare("SELECT idcredito FROM creditos WHERE idcredito = :idcredito LIMIT 1");
+            $stmtExiste->execute([':idcredito' => $idCredito]);
+            if (!$stmtExiste->fetch()) {
+                throw new Exception('Crédito no encontrado');
+            }
+
+            $stmtHistorial = $this->db->prepare("DELETE FROM historial_pagos WHERE idcredito = :idcredito");
+            $stmtHistorial->execute([':idcredito' => $idCredito]);
+            $historialEliminado = $stmtHistorial->rowCount();
+
+            $stmtPagos = $this->db->prepare("DELETE FROM pagos_credito WHERE idcredito = :idcredito");
+            $stmtPagos->execute([':idcredito' => $idCredito]);
+            $pagosEliminados = $stmtPagos->rowCount();
+
+            $stmtCredito = $this->db->prepare("DELETE FROM creditos WHERE idcredito = :idcredito");
+            $stmtCredito->execute([':idcredito' => $idCredito]);
+            $creditoEliminado = $stmtCredito->rowCount();
+
+            if ($creditoEliminado <= 0) {
+                throw new Exception('No se pudo eliminar el crédito');
+            }
+
+            $this->db->commit();
+
+            return [
+                'idcredito' => $idCredito,
+                'historial_eliminado' => $historialEliminado,
+                'pagos_eliminados' => $pagosEliminados,
+                'credito_eliminado' => $creditoEliminado,
+            ];
+        } catch (Throwable $e) {
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+
+            throw new Exception('Error al eliminar crédito: ' . $e->getMessage());
+        }
+    }
+
     private function esTipoQuincenal(string $tipo): bool
     {
         return strtolower(trim($tipo)) === 'quincenal';
@@ -178,6 +222,18 @@ class CreditosRepository
     private function redondearHaciaArribaPeso(float $monto): float
     {
         return (float)ceil(max(0, $monto));
+    }
+
+    private function avanzarFechaProgramada(DateTime $fechaBase, DateInterval $intervalo): DateTime
+    {
+        $fechaProgramada = clone $fechaBase;
+        $fechaProgramada->add($intervalo);
+
+        while ((int)$fechaProgramada->format('w') === 0) {
+            $fechaProgramada->add(new DateInterval('P1D'));
+        }
+
+        return $fechaProgramada;
     }
 
     /**
@@ -205,11 +261,11 @@ class CreditosRepository
     {
         $sql = "SELECT 
                     c.*,
-                    CONCAT(cli.ap_paterno, ' ', cli.ap_materno, ' ', cli.nombres) AS cliente,
-                    CONCAT(cob.ap_paterno, ' ', cob.ap_materno, ' ', cob.nombres) AS cobratario
+                    COALESCE(CONCAT(cli.ap_paterno, ' ', cli.ap_materno, ' ', cli.nombres), 'Sin cliente') AS cliente,
+                    COALESCE(CONCAT(cob.ap_paterno, ' ', cob.ap_materno, ' ', cob.nombres), 'Sin asignar') AS cobratario
                 FROM creditos c
-                JOIN personas cli ON c.idcliente = cli.idpersona
-                JOIN personas cob ON c.idcobratario = cob.idpersona
+                LEFT JOIN personas cli ON c.idcliente = cli.idpersona
+                LEFT JOIN personas cob ON c.idcobratario = cob.idpersona
                 WHERE c.idcredito = ?";
         $stmt = $this->db->prepare($sql);
         $stmt->execute([$idCredito]);
@@ -1102,9 +1158,8 @@ class CreditosRepository
 
     private function calcularPeriodosVencidos(string $tipoCredito, DateTime $fechaProgramada, DateTime $hoy): int
     {
-        $diasDiferencia = (int)$fechaProgramada->diff($hoy)->days;
-
         if ($this->esTipoFlexible($tipoCredito)) {
+            $diasDiferencia = (int)$fechaProgramada->diff($hoy)->days;
             $anios = (int)$hoy->format('Y') - (int)$fechaProgramada->format('Y');
             $meses = (int)$hoy->format('n') - (int)$fechaProgramada->format('n');
             $totalMeses = ($anios * 12) + $meses;
@@ -1122,7 +1177,16 @@ class CreditosRepository
             $diasIntervalo = 1;
         }
 
-        return max(0, intdiv($diasDiferencia, $diasIntervalo));
+        $intervalo = new DateInterval('P' . $diasIntervalo . 'D');
+        $periodosVencidos = 0;
+        $fechaComparacion = clone $fechaProgramada;
+
+        while ($fechaComparacion < $hoy) {
+            $periodosVencidos++;
+            $fechaComparacion = $this->avanzarFechaProgramada($fechaComparacion, $intervalo);
+        }
+
+        return $periodosVencidos;
     }
 
     public function obtenerTiposCredito(bool $soloActivos = true): array

@@ -76,12 +76,14 @@ unset($_SESSION['success'], $_SESSION['error']);
                             <td><?= htmlspecialchars($usuario['email']) ?></td>
                             <td><?= htmlspecialchars($usuario['telefono'] ?? 'N/A') ?></td>
                             <td>
-                                <?php if ($usuario['rol'] === 'Cliente'): ?>
+                                <?php if ($usuario['rol'] === 'Admin'): ?>
+                                    <span class="badge badge-success">Admin</span>
+                                <?php elseif ($usuario['rol'] === 'Cliente'): ?>
                                     <span class="badge badge-info">Cliente</span>
                                 <?php elseif ($usuario['rol'] === 'Cobratario'): ?>
                                     <span class="badge badge-warning">Cobratario</span>
                                 <?php else: ?>
-                                    <span class="badge badge-success">Admin</span>
+                                    <span class="badge badge-warning">Otro</span>
                                 <?php endif; ?>
                             </td>
                             <td><?= date('d/m/Y', strtotime($usuario['created_at'])) ?></td>

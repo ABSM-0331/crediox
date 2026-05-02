@@ -64,7 +64,7 @@ $logo = $empresa['logo_ruta'] ?? null;
             <div class="foto-upload-area">
                 <div class="foto-preview" id="empresaLogoPreview">
                     <?php if (!empty($logo)): ?>
-                        <img src="/<?= htmlspecialchars($logo) ?>" alt="Logo actual">
+                        <img src="/panel/public/<?= htmlspecialchars($logo) ?>" alt="Logo actual">
                     <?php else: ?>
                         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                             <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>

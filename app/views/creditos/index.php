@@ -43,6 +43,20 @@ if (!function_exists('formatearTipoCreditoTexto')) {
         return ucwords($limpio);
     }
 }
+
+if (!function_exists('avanzarFechaProgramadaCredito')) {
+    function avanzarFechaProgramadaCredito(DateTime $fechaBase, DateInterval $intervalo): DateTime
+    {
+        $fechaProgramada = clone $fechaBase;
+        $fechaProgramada->add($intervalo);
+
+        while ((int)$fechaProgramada->format('w') === 0) {
+            $fechaProgramada->add(new DateInterval('P1D'));
+        }
+
+        return $fechaProgramada;
+    }
+}
 ?>
 
 <section id="creditos" class="content-section">
@@ -191,6 +205,9 @@ if (!function_exists('formatearTipoCreditoTexto')) {
                                                         </svg>
                                                         Ver Detalle
                                                     </button>
+                                                    <button type="button" onclick="eliminarCredito(<?= (int)$credito['idcredito'] ?>)" style="padding: 6px 12px; margin-left: 6px; background: var(--accent-red); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 500; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
+                                                        Eliminar
+                                                    </button>
                                                 </td>
                                             </tr>
                                         <?php endforeach; ?>
@@ -261,6 +278,9 @@ if (!function_exists('formatearTipoCreditoTexto')) {
                                                         </svg>
                                                         Ver Detalle
                                                     </button>
+                                                    <button type="button" onclick="eliminarCredito(<?= (int)$credito['idcredito'] ?>)" style="padding: 6px 12px; margin-left: 6px; background: var(--accent-red); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 500; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
+                                                        Eliminar
+                                                    </button>
                                                 </td>
                                             </tr>
                                         <?php endforeach; ?>
@@ -285,50 +305,50 @@ if (!function_exists('formatearTipoCreditoTexto')) {
 
         <div class="form-card">
             <!-- Información del crédito -->
-            <div class="form-section">
-                <div class="form-section-title">
+            <details open style="margin-bottom: 0; border-bottom: 1px solid var(--border-color); padding: 0;">
+                <summary style="cursor: pointer; list-style: none; padding: 16px 18px; background: var(--bg-tertiary); display: flex; align-items: center; gap: 12px; font-weight: 600; color: var(--text-primary);">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <circle cx="12" cy="12" r="10"></circle>
                         <line x1="12" y1="16" x2="12" y2="12"></line>
                         <line x1="12" y1="8" x2="12.01" y2="8"></line>
                     </svg>
-                    <h3>Información del Crédito</h3>
-                </div>
-                <div id="infoCredito" style="margin-top: 15px;">
+                    <span>Información del Crédito</span>
+                </summary>
+                <div id="infoCredito" style="padding: 16px 18px; margin-top: 0;">
                     <!-- Se llenará con JavaScript -->
                 </div>
-            </div>
+            </details>
 
             <!-- Resumen de pagos -->
-            <div class="form-section" id="resumenPagos" style="margin-top: 20px;">
-                <div class="form-section-title">
+            <details open style="margin-bottom: 0; border-bottom: 1px solid var(--border-color); padding: 0;">
+                <summary style="cursor: pointer; list-style: none; padding: 16px 18px; background: var(--bg-tertiary); display: flex; align-items: center; gap: 12px; font-weight: 600; color: var(--text-primary);">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
                         <line x1="3" y1="9" x2="21" y2="9"></line>
                         <line x1="9" y1="21" x2="9" y2="9"></line>
                     </svg>
-                    <h3>Resumen de Montos</h3>
-                </div>
-                <div id="statsCredito" style="margin-top: 15px;">
+                    <span>Resumen de Montos</span>
+                </summary>
+                <div id="statsCredito" style="padding: 16px 18px; margin-top: 0;">
                     <!-- Se llenará con JavaScript -->
                 </div>
-            </div>
+            </details>
 
             <!-- Tabla de pagos -->
-            <div class="form-section" id="tablaPagosSection" style="margin-top: 20px;">
-                <div class="form-section-title">
+            <details open style="margin-bottom: 0; padding: 0;">
+                <summary style="cursor: pointer; list-style: none; padding: 16px 18px; background: var(--bg-tertiary); display: flex; align-items: center; gap: 12px; font-weight: 600; color: var(--text-primary);">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M21 10H3"></path>
                         <path d="M21 6H3"></path>
                         <path d="M21 14H3"></path>
                         <path d="M21 18H3"></path>
                     </svg>
-                    <h3>Cronograma de Pagos</h3>
-                </div>
-                <div id="tablaPagos" style="margin-top: 15px;">
+                    <span>Cronograma de Pagos</span>
+                </summary>
+                <div id="tablaPagos" style="padding: 16px 18px; margin-top: 0;">
                     <!-- Se llenará con JavaScript -->
                 </div>
-            </div>
+            </details>
         </div>
     </div>
 
@@ -409,6 +429,10 @@ if (!function_exists('formatearTipoCreditoTexto')) {
                         <label for="fecha_inicio">Fecha Inicio <span class="required">*</span></label>
                         <input type="date" id="fecha_inicio" name="fecha_inicio" value="<?= $fechaInicio ?>" required>
                     </div>
+                    <div class="form-field">
+                        <label for="fecha_primer_pago">Fecha Primer Pago</label>
+                        <input type="date" id="fecha_primer_pago" readonly style="background: var(--bg-tertiary); cursor: not-allowed; opacity: 0.7;">
+                    </div>
                 </div>
             </div>
 
@@ -446,6 +470,7 @@ if (!function_exists('formatearTipoCreditoTexto')) {
 
                     $saldo = $monto;
                     $fecha = new DateTime($fechaInicio);
+                    $intervaloSimulacion = new DateInterval($config['intervalo'] ?? 'P1D');
                 ?>
                     <div class="credito-stats-grid">
                         <div class="stat-box">
@@ -482,6 +507,7 @@ if (!function_exists('formatearTipoCreditoTexto')) {
                             <tbody>
                                 <?php
                                 for ($i = 1; $i <= $pagos; $i++) {
+                                    $fecha = avanzarFechaProgramadaCredito($fecha, $intervaloSimulacion);
                                     $saldoInicial = $saldo;
 
                                     if ($i == $pagos) {
@@ -505,7 +531,6 @@ if (!function_exists('formatearTipoCreditoTexto')) {
                                         <td style="padding: 8px 5px;">$<?= number_format(max(0, $saldo), 2, '.', ',') ?></td>
                                     </tr>
                                 <?php
-                                    $fecha->add(new DateInterval($config['intervalo']));
                                 }
                                 ?>
                             </tbody>
@@ -793,6 +818,38 @@ if (!function_exists('formatearTipoCreditoTexto')) {
             .toLowerCase()
             .replace(/[_-]+/g, ' ')
             .replace(/\b\w/g, (letra) => letra.toUpperCase());
+    }
+
+    function calcularFechaPrimerPago() {
+        const fechaInicio = document.getElementById('fecha_inicio')?.value;
+        const tipo = document.getElementById('tipo')?.value;
+        const fechaPrimerPagoInput = document.getElementById('fecha_primer_pago');
+
+        if (!fechaInicio || !tipo || !fechaPrimerPagoInput) {
+            return;
+        }
+
+        if (!configuracionesData[tipo]) {
+            fechaPrimerPagoInput.value = '';
+            return;
+        }
+
+        const diasIntervalo = configuracionesData[tipo].dias_intervalo || 1;
+
+        // Parsear fecha ISO sin problemas de zona horaria
+        const [year, month, day] = fechaInicio.split('-');
+        const fecha = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+        fecha.setDate(fecha.getDate() + parseInt(diasIntervalo));
+
+        while (fecha.getDay() === 0) {
+            fecha.setDate(fecha.getDate() + 1);
+        }
+
+        const yearFinal = fecha.getFullYear();
+        const monthFinal = String(fecha.getMonth() + 1).padStart(2, '0');
+        const dayFinal = String(fecha.getDate()).padStart(2, '0');
+
+        fechaPrimerPagoInput.value = `${yearFinal}-${monthFinal}-${dayFinal}`;
     }
 
     function actualizarConfig() {
@@ -1086,6 +1143,24 @@ if (!function_exists('formatearTipoCreditoTexto')) {
         document.querySelector('.section-header').scrollIntoView({
             behavior: 'smooth'
         });
+
+        // Agregar listeners después de mostrar el simulador
+        const fechaInicioInput = document.getElementById('fecha_inicio');
+        const tipoSelect = document.getElementById('tipo');
+
+        if (fechaInicioInput) {
+            fechaInicioInput.addEventListener('change', calcularFechaPrimerPago);
+        }
+
+        if (tipoSelect) {
+            tipoSelect.addEventListener('change', function() {
+                actualizarConfig();
+                calcularFechaPrimerPago();
+            });
+        }
+
+        // Calcular fecha del primer pago con valores actuales
+        calcularFechaPrimerPago();
     }
 
     function cerrarSimulador() {
@@ -1168,6 +1243,62 @@ if (!function_exists('formatearTipoCreditoTexto')) {
         // Scroll a la parte superior
         document.querySelector('.section-header').scrollIntoView({
             behavior: 'smooth'
+        });
+    }
+
+    function eliminarCredito(idCredito) {
+        Swal.fire({
+            title: '¿Eliminar crédito?',
+            text: `Se eliminará el crédito #${idCredito} y todos sus pagos e historial relacionados.`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, eliminar',
+            cancelButtonText: 'Cancelar',
+            confirmButtonColor: '#ef4444'
+        }).then((result) => {
+            if (!result.isConfirmed) {
+                return;
+            }
+
+            fetch('/panel/public/creditos/eliminar', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
+                    },
+                    body: new URLSearchParams({
+                        idcredito: String(idCredito)
+                    })
+                })
+                .then(async (response) => {
+                    const data = await response.json().catch(() => ({
+                        success: false,
+                        mensaje: 'Respuesta inválida del servidor'
+                    }));
+
+                    if (!response.ok || !data.success) {
+                        throw new Error(data.mensaje || 'No se pudo eliminar el crédito');
+                    }
+
+                    return data;
+                })
+                .then(() => {
+                    Swal.fire({
+                        title: 'Eliminado',
+                        text: 'El crédito y sus registros relacionados fueron eliminados correctamente.',
+                        icon: 'success',
+                        confirmButtonText: 'Aceptar'
+                    }).then(() => {
+                        window.location.href = '/panel/public/creditos';
+                    });
+                })
+                .catch((error) => {
+                    Swal.fire({
+                        title: 'Error',
+                        text: error.message || 'No se pudo eliminar el crédito.',
+                        icon: 'error',
+                        confirmButtonText: 'Aceptar'
+                    });
+                });
         });
     }
 

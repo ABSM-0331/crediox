@@ -1,15 +1,15 @@
-<?php $cliente = $cliente ?? []; ?>
-
 <?php
-$fotoActual = !empty($cliente['foto_ruta']) ? '/panel/public/' . ltrim($cliente['foto_ruta'], '/') : null;
+$error = $_SESSION['error'] ?? null;
+unset($_SESSION['error']);
 ?>
 
-<section id="editar-cliente" class="content-section">
+<section id="nuevo-administrador" class="content-section">
     <div class="section-header">
-        <h2>Editar Cliente</h2>
-        <a href="/panel/public/clientes">
-            <button class="btn-secondary" type="button">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <h2>Registrar Nuevo Administrador</h2>
+        <a href="administradores">
+            <button class="btn-secondary" id="btnVolverAdministradores">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2">
                     <line x1="19" y1="12" x2="5" y2="12"></line>
                     <polyline points="12 19 5 12 12 5"></polyline>
                 </svg>
@@ -18,12 +18,19 @@ $fotoActual = !empty($cliente['foto_ruta']) ? '/panel/public/' . ltrim($cliente[
         </a>
     </div>
 
-    <form id="formEditarCliente" class="form-card" action="/panel/public/actualizar-cliente" method="post" enctype="multipart/form-data">
-        <input type="hidden" name="idcliente" value="<?= (int)$cliente['idcliente'] ?>">
+    <?php if ($error): ?>
+        <div class="form-card" style="margin-bottom: 16px; border-left: 4px solid var(--accent-red);">
+            <p style="margin: 0; color: var(--accent-red); font-weight: 600;">
+                <?= htmlspecialchars($error) ?>
+            </p>
+        </div>
+    <?php endif; ?>
 
+    <form id="formNuevoAdministrador" class="form-card" action="crear-administrador" method="post" enctype="multipart/form-data">
         <div class="form-section">
             <div class="form-section-title">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2">
                     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                     <circle cx="12" cy="7" r="4"></circle>
                 </svg>
@@ -33,72 +40,69 @@ $fotoActual = !empty($cliente['foto_ruta']) ? '/panel/public/' . ltrim($cliente[
             <div class="form-grid">
                 <div class="form-field">
                     <label for="ap_paterno">Apellido Paterno <span class="required">*</span></label>
-                    <input type="text" id="ap_paterno" name="ap_paterno" value="<?= htmlspecialchars($cliente['ap_paterno'] ?? '') ?>" maxlength="50" required>
+                    <input type="text" id="ap_paterno" name="ap_paterno" placeholder="Ej: Gonzalez" maxlength="50" required>
                 </div>
                 <div class="form-field">
                     <label for="ap_materno">Apellido Materno</label>
-                    <input type="text" id="ap_materno" name="ap_materno" value="<?= htmlspecialchars($cliente['ap_materno'] ?? '') ?>" maxlength="50">
+                    <input type="text" id="ap_materno" name="ap_materno" placeholder="Ej: Lopez" maxlength="50">
                 </div>
                 <div class="form-field span-2">
                     <label for="nombres">Nombre(s) <span class="required">*</span></label>
-                    <input type="text" id="nombres" name="nombres" value="<?= htmlspecialchars($cliente['nombres'] ?? '') ?>" maxlength="80" required>
+                    <input type="text" id="nombres" name="nombres" placeholder="Ej: Juan Carlos" maxlength="80" required>
                 </div>
                 <div class="form-field">
                     <label for="sexo">Sexo</label>
                     <select id="sexo" name="sexo">
-                        <option value="" disabled <?= empty($cliente['sexo']) ? 'selected' : '' ?>>Seleccionar</option>
-                        <option value="M" <?= (($cliente['sexo'] ?? '') === 'M') ? 'selected' : '' ?>>Masculino</option>
-                        <option value="F" <?= (($cliente['sexo'] ?? '') === 'F') ? 'selected' : '' ?>>Femenino</option>
+                        <option value="" disabled selected>Seleccionar</option>
+                        <option value="M">Masculino</option>
+                        <option value="F">Femenino</option>
                     </select>
                 </div>
                 <div class="form-field">
                     <label for="fecha_nacimiento">Fecha de Nacimiento</label>
-                    <input type="date" id="fecha_nacimiento" name="fecha_nacimiento" class="fecha_nacimiento" value="<?= htmlspecialchars($cliente['fecha_nacimiento'] ?? '') ?>">
+                    <input type="date" id="fecha_nacimiento" name="fecha_nacimiento" class="fecha_nacimiento">
                 </div>
                 <div class="form-field">
                     <label for="edad">Edad</label>
-                    <input type="number" id="edad" class="edad" name="edad" value="<?= htmlspecialchars((string)($cliente['edad'] ?? '')) ?>" placeholder="0" min="0" max="150" readonly>
+                    <input type="number" id="edad" class="edad" name="edad" placeholder="0" min="0" max="150" readonly>
                 </div>
                 <div class="form-field">
                     <label for="curp">CURP</label>
-                    <input type="text" id="curp" name="curp" value="<?= htmlspecialchars($cliente['curp'] ?? '') ?>" maxlength="18" style="text-transform: uppercase;">
+                    <input type="text" id="curp" name="curp" placeholder="Ej: GOGJ850315HDFRRL09" maxlength="18" style="text-transform: uppercase;">
                 </div>
                 <div class="form-field">
                     <label for="clave_elector">Clave de Elector</label>
-                    <input type="text" id="clave_elector" name="clave_elector" value="<?= htmlspecialchars($cliente['clave_elector'] ?? '') ?>" maxlength="20">
+                    <input type="text" id="clave_elector" name="clave_elector" placeholder="Clave INE" maxlength="20">
                 </div>
                 <div class="form-field">
                     <label for="email">Correo Electronico</label>
-                    <input type="email" id="email" name="email" value="<?= htmlspecialchars($cliente['email'] ?? '') ?>" maxlength="100">
+                    <input type="email" id="email" name="email" placeholder="correo@ejemplo.com" maxlength="100">
                 </div>
                 <div class="form-field">
                     <label for="telefono">Telefono <span class="required">*</span></label>
-                    <input type="tel" id="telefono" name="telefono" value="<?= htmlspecialchars($cliente['telefono'] ?? '') ?>" maxlength="20" required>
+                    <input type="tel" id="telefono" name="telefono" placeholder="Ej: 555 123 4567" maxlength="20" required>
                 </div>
             </div>
         </div>
 
         <div class="form-section">
             <div class="form-section-title">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2">
                     <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
                     <circle cx="8.5" cy="8.5" r="1.5"></circle>
                     <polyline points="21 15 16 10 5 21"></polyline>
                 </svg>
-                <h3>Foto del Cliente</h3>
+                <h3>Foto del Administrador</h3>
             </div>
 
             <div class="foto-upload-area">
                 <div class="foto-preview" id="fotoPreview">
-                    <?php if ($fotoActual): ?>
-                        <img src="/panel/public/<?= htmlspecialchars($fotoActual) ?>" alt="Foto del cliente" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;">
-                    <?php else: ?>
-                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                            <circle cx="12" cy="7" r="4"></circle>
-                        </svg>
-                        <span>Sin foto</span>
-                    <?php endif; ?>
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                    <span>Sin foto</span>
                 </div>
                 <div class="foto-actions">
                     <label for="foto_ruta" class="btn-secondary" style="cursor: pointer;">
@@ -107,7 +111,7 @@ $fotoActual = !empty($cliente['foto_ruta']) ? '/panel/public/' . ltrim($cliente[
                             <polyline points="17 8 12 3 7 8"></polyline>
                             <line x1="12" y1="3" x2="12" y2="15"></line>
                         </svg>
-                        Cambiar Foto
+                        Subir Foto
                     </label>
                     <input type="file" id="foto_ruta" name="foto_ruta" accept="image/*" style="display: none;">
                     <span class="foto-hint">JPG, PNG. Max 2MB</span>
@@ -117,7 +121,8 @@ $fotoActual = !empty($cliente['foto_ruta']) ? '/panel/public/' . ltrim($cliente[
 
         <div class="form-section">
             <div class="form-section-title">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2">
                     <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
                     <circle cx="12" cy="10" r="3"></circle>
                 </svg>
@@ -127,56 +132,56 @@ $fotoActual = !empty($cliente['foto_ruta']) ? '/panel/public/' . ltrim($cliente[
             <div class="form-grid">
                 <div class="form-field span-2">
                     <label for="dom_calle">Calle</label>
-                    <input type="text" id="dom_calle" name="dom_calle" value="<?= htmlspecialchars($cliente['dom_calle'] ?? '') ?>" maxlength="100">
+                    <input type="text" id="dom_calle" name="dom_calle" placeholder="Nombre de la calle" maxlength="100">
                 </div>
                 <div class="form-field">
                     <label for="dom_numero">Numero</label>
-                    <input type="text" id="dom_numero" name="dom_numero" value="<?= htmlspecialchars($cliente['dom_numero'] ?? '') ?>" maxlength="10">
+                    <input type="text" id="dom_numero" name="dom_numero" placeholder="Ej: 123" maxlength="10">
                 </div>
                 <div class="form-field">
                     <label for="dom_colonia">Colonia</label>
-                    <input type="text" id="dom_colonia" name="dom_colonia" value="<?= htmlspecialchars($cliente['dom_colonia'] ?? '') ?>" maxlength="100">
+                    <input type="text" id="dom_colonia" name="dom_colonia" placeholder="Nombre de la colonia" maxlength="100">
                 </div>
                 <div class="form-field">
                     <label for="dom_cruz1">Entre Calle 1</label>
-                    <input type="text" id="dom_cruz1" name="dom_cruz1" value="<?= htmlspecialchars($cliente['dom_cruz1'] ?? '') ?>" maxlength="100">
+                    <input type="text" id="dom_cruz1" name="dom_cruz1" placeholder="Primer cruce" maxlength="100">
                 </div>
                 <div class="form-field">
                     <label for="dom_cruz2">Entre Calle 2</label>
-                    <input type="text" id="dom_cruz2" name="dom_cruz2" value="<?= htmlspecialchars($cliente['dom_cruz2'] ?? '') ?>" maxlength="100">
+                    <input type="text" id="dom_cruz2" name="dom_cruz2" placeholder="Segundo cruce" maxlength="100">
                 </div>
                 <div class="form-field">
                     <label for="dom_cp">Codigo Postal</label>
-                    <input type="text" id="dom_cp" name="dom_cp" value="<?= htmlspecialchars($cliente['dom_cp'] ?? '') ?>" maxlength="10">
+                    <input type="text" id="dom_cp" name="dom_cp" placeholder="Ej: 44100" maxlength="10">
                 </div>
                 <div class="form-field">
                     <label for="idestado">Estado</label>
-                    <select id="idestado" name="idestado" data-selected-estado="<?= htmlspecialchars((string)($cliente['idestado'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
+                    <select id="idestado" name="idestado">
                         <option value="" disabled selected>Seleccionar estado</option>
                     </select>
                 </div>
                 <div class="form-field">
                     <label for="idmunicipio">Municipio</label>
-                    <select id="idmunicipio" name="idmunicipio" data-selected-municipio="<?= htmlspecialchars((string)($cliente['idmunicipio'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
+                    <select id="idmunicipio" name="idmunicipio">
                         <option value="" disabled selected>Seleccionar municipio</option>
                     </select>
                 </div>
                 <div class="form-field span-full">
                     <label for="dom_referencia">Referencia del Domicilio</label>
-                    <textarea id="dom_referencia" name="dom_referencia" maxlength="255" rows="3"><?= htmlspecialchars($cliente['dom_referencia'] ?? '') ?></textarea>
+                    <textarea id="dom_referencia" name="dom_referencia" placeholder="Ej: Casa color azul, frente al parque..." maxlength="255" rows="3"></textarea>
                 </div>
             </div>
         </div>
 
         <div class="form-actions">
-            <button type="button" class="btn-secondary btn-lg" onclick="window.location.href='/panel/public/clientes'">Cancelar</button>
+            <button type="button" class="btn-secondary btn-lg" id="btnCancelar">Cancelar</button>
             <button type="submit" class="btn-primary btn-lg">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
                     <polyline points="17 21 17 13 7 13 7 21"></polyline>
                     <polyline points="7 3 7 8 15 8"></polyline>
                 </svg>
-                Guardar Cambios
+                Guardar Administrador
             </button>
         </div>
     </form>
