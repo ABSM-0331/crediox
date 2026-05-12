@@ -1142,6 +1142,12 @@ class CreditosRepository
             $fecha = new DateTime($fechaProgramada);
             $fecha->setTime(0, 0, 0);
 
+            // Si la fecha programada cae en domingo, no debe cobrarse moratorio
+            // aunque se cobre en una fecha posterior (no se trabaja ese día).
+            if ((int)$fecha->format('w') === 0) {
+                return 0.0;
+            }
+
             $hoySinHora = clone $hoy;
             $hoySinHora->setTime(0, 0, 0);
 
