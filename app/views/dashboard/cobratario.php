@@ -218,39 +218,81 @@ $creditosNoActivos = array_merge($creditosCompletados, $creditosCerrados);
         </div>
 
         <div class="form-card">
+            <style>
+                .form-card .form-section summary.form-section-title {
+                    list-style: none;
+                    cursor: pointer;
+                    padding: 12px 14px;
+                    background: transparent;
+                    border: 1px solid var(--border-color);
+                    border-radius: 8px;
+                    margin-bottom: 12px;
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                    justify-content: flex-start;
+                    color: var(--text-primary);
+                    font-weight: 700;
+                }
+
+                .form-card .form-section[open]>summary.form-section-title {
+                    background: var(--bg-tertiary);
+                }
+
+                .form-card .form-section summary.form-section-title svg {
+                    flex: 0 0 20px;
+                }
+
+                .form-card .form-section summary.form-section-title span::after {
+                    content: '\25BE';
+                    margin-left: 8px;
+                    transition: transform 0.18s;
+                    color: var(--text-secondary);
+                }
+
+                .form-card .form-section[open] summary.form-section-title span::after {
+                    transform: rotate(180deg);
+                }
+
+                .form-card .form-section>#infoCredito,
+                .form-card .form-section>#statsCredito,
+                .form-card .form-section>#tablaPagos {
+                    margin-top: 12px;
+                }
+            </style>
             <!-- Información del crédito -->
-            <div class="form-section">
-                <div class="form-section-title">
+            <details class="form-section" open>
+                <summary class="form-section-title">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <circle cx="12" cy="12" r="10"></circle>
                         <line x1="12" y1="16" x2="12" y2="12"></line>
                         <line x1="12" y1="8" x2="12.01" y2="8"></line>
                     </svg>
                     <h3>Información del Crédito</h3>
-                </div>
+                </summary>
                 <div id="infoCredito" style="margin-top: 15px;">
                     <!-- Se llenará con JavaScript -->
                 </div>
-            </div>
+            </details>
 
             <!-- Resumen de pagos -->
-            <div class="form-section" id="resumenPagos" style="margin-top: 20px;">
-                <div class="form-section-title">
+            <details class="form-section" id="resumenPagos" open style="margin-top: 20px;">
+                <summary class="form-section-title">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
                         <line x1="3" y1="9" x2="21" y2="9"></line>
                         <line x1="9" y1="21" x2="9" y2="9"></line>
                     </svg>
                     <h3>Resumen de Montos</h3>
-                </div>
+                </summary>
                 <div id="statsCredito" style="margin-top: 15px;">
                     <!-- Se llenará con JavaScript -->
                 </div>
-            </div>
+            </details>
 
             <!-- Tabla de pagos -->
-            <div class="form-section" id="tablaPagosSection" style="margin-top: 20px;">
-                <div class="form-section-title">
+            <details class="form-section" id="tablaPagosSection" open style="margin-top: 20px;">
+                <summary class="form-section-title">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M21 10H3"></path>
                         <path d="M21 6H3"></path>
@@ -258,11 +300,11 @@ $creditosNoActivos = array_merge($creditosCompletados, $creditosCerrados);
                         <path d="M21 18H3"></path>
                     </svg>
                     <h3>Cronograma de Pagos</h3>
-                </div>
+                </summary>
                 <div id="tablaPagos" style="margin-top: 15px;">
                     <!-- Se llenará con JavaScript -->
                 </div>
-            </div>
+            </details>
         </div>
     </div>
 </section>

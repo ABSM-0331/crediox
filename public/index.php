@@ -1,4 +1,7 @@
 <?php
+// Configurar zona horaria para Yucatán, México
+date_default_timezone_set('America/Mexico_City');
+
 require_once __DIR__ . '/../vendor/autoload.php';
 $lifetime = 60 * 60 * 24 * 7;
 session_set_cookie_params([
@@ -63,6 +66,15 @@ switch ($uri) {
         break;
     case 'clientes':
         (new ClientesController())->mostrarCatalogoClientes();
+        break;
+    case 'reportes/saldos':
+        (new ClientesController())->vistaSaldosClientes();
+        break;
+    case 'reportes/saldos/export':
+        (new ClientesController())->exportarReporteSaldos();
+        break;
+    case 'reportes/saldos/cliente':
+        (new ClientesController())->obtenerCreditosClienteJson();
         break;
     case 'nuevo-cliente':
         (new ClientesController())->vistaCrearCliente();

@@ -375,6 +375,35 @@ class CreditosRepository
     }
 
     /**
+     * Obtener saldos pendientes por cliente. Si se proporciona un idCliente,
+     * regresa sólo ese cliente.
+     */
+    public function obtenerSaldosClientes(?int $idCliente = null): array
+    {
+        $sql = "SELECT
+                    p.idpersona AS idcliente,
+                    CONCAT(p.ap_paterno, ' ', p.ap_materno, ' ', p.nombres) AS cliente,
+                    COALESCE(SUM(c.saldo_pendiente), 0) AS saldo_pendiente
+                FROM personas p
+                LEFT JOIN creditos c ON c.idcliente = p.idpersona AND c.saldo_pendiente > 0
+                WHERE p.idrol = 2 AND p.activo = 1";
+
+        $params = [];
+        if ($idCliente !== null && $idCliente > 0) {
+            $sql .= " AND p.idpersona = :idcliente";
+            $params[':idcliente'] = $idCliente;
+        }
+
+        $sql .= " GROUP BY p.idpersona, p.ap_paterno, p.ap_materno, p.nombres
+                  ORDER BY saldo_pendiente DESC";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+
+        return $stmt->fetchAll();
+    }
+
+    /**
      * Obtiene el crédito activo no liquidado de un cliente, si existe
      */
     public function obtenerCreditoActivoCliente(int $idCliente)
@@ -1156,7 +1185,8 @@ class CreditosRepository
             }
 
             $periodos = $this->calcularPeriodosVencidos($tipoCredito, $fecha, $hoySinHora);
-            return round($moratorioUnitario * $periodos, 2);
+            // Cobrar moratorio sólo una vez por cuota vencida (no multiplicar por periodos)
+            return $periodos > 0 ? round($moratorioUnitario, 2) : 0.0;
         } catch (Throwable $e) {
             return 0.0;
         }

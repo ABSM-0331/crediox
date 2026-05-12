@@ -82,4 +82,17 @@ class CreditosService
     {
         return $this->creditosRepo->eliminarCreditoCascada($idCredito);
     }
+
+    public function obtenerCreditosCliente(int $idCliente): array
+    {
+        return $this->creditosRepo->obtenerCreditosCliente($idCliente);
+    }
+
+    /**
+     * Obtener saldos pendientes por cliente (todos o uno en particular)
+     */
+    public function obtenerSaldosClientes(?int $idCliente = null): array
+    {
+        return $this->creditosRepo->obtenerSaldosClientes($idCliente);
+    }
 }

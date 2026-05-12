@@ -40,6 +40,42 @@
         <h2>Avance de Cobranza</h2>
     </div>
 
+    <style>
+        .avance-cobros-block summary.avance-cobros-summary {
+            list-style: none;
+            cursor: pointer;
+            padding: 12px 14px;
+            background: transparent;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            color: var(--text-primary);
+            font-weight: 700;
+        }
+
+        .avance-cobros-block[open]>summary.avance-cobros-summary {
+            background: var(--bg-tertiary);
+        }
+
+        .avance-cobros-block summary.avance-cobros-summary span::after {
+            content: '\25BE';
+            margin-left: 10px;
+            transition: transform 0.2s;
+        }
+
+        .avance-cobros-block[open] summary.avance-cobros-summary span::after {
+            transform: rotate(180deg);
+        }
+
+        /* Acomodar el contenido dentro del details */
+        .avance-cobros-block>.avance-cobros-table-wrap {
+            margin-top: 12px;
+        }
+    </style>
+
     <section id="avanceCobratariosModulo" class="form-card avance-cobros-module">
         <div class="form-section avance-cobros-header">
             <div class="avance-cobros-title-row">
@@ -105,9 +141,8 @@
                     <span class="avance-cobros-kpi-label">Cobratarios con movimiento</span>
                 </article>
             </div>
-
-            <div class="avance-cobros-block">
-                <h3>Resumen por Cobratario</h3>
+            <details class="avance-cobros-block" open>
+                <summary class="avance-cobros-summary"><span>Resumen por Cobratario</span></summary>
                 <div class="avance-cobros-table-wrap">
                     <table class="data-table avance-cobros-table resumen-table">
                         <thead>
@@ -136,10 +171,10 @@
                         </tbody>
                     </table>
                 </div>
-            </div>
+            </details>
 
-            <div class="avance-cobros-block">
-                <h3>Detalle de Cobros Realizados</h3>
+            <details class="avance-cobros-block" open>
+                <summary class="avance-cobros-summary"><span>Detalle de Cobros Realizados</span></summary>
                 <div class="avance-cobros-table-wrap">
                     <table class="data-table avance-cobros-table detalle-table">
                         <thead>
@@ -176,7 +211,7 @@
                         </tbody>
                     </table>
                 </div>
-            </div>
+            </details>
         </div>
     </section>
 </section>
