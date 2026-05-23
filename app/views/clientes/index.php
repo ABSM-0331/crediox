@@ -20,10 +20,10 @@
             <circle cx="11" cy="11" r="8"></circle>
             <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
         </svg>
-        <input type="text" placeholder="Buscar cliente...">
+        <input id="buscarCliente" type="text" placeholder="Buscar cliente..." autocomplete="off">
     </div>
 
-    <div class="table-container">
+    <div class="table-container clientes-table-container">
         <table class="data-table">
             <thead>
                 <tr>
@@ -70,3 +70,33 @@
         </table>
     </div>
 </section>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const inputBusqueda = document.getElementById('buscarCliente');
+        const tabla = document.querySelector('#clientes .data-table');
+
+        if (!inputBusqueda || !tabla || !tabla.tBodies.length) {
+            return;
+        }
+
+        const filas = Array.from(tabla.tBodies[0].rows);
+
+        inputBusqueda.addEventListener('input', function () {
+            const consulta = this.value.toLowerCase().trim();
+
+            filas.forEach(function (fila) {
+                const textoFila = Array.from(fila.cells)
+                    .slice(0, 6)
+                    .map(function (cell) {
+                        return cell.textContent.toLowerCase();
+                    })
+                    .join(' ');
+
+                fila.style.display = consulta === '' || textoFila.includes(consulta)
+                    ? ''
+                    : 'none';
+            });
+        });
+    });
+</script>
