@@ -749,7 +749,7 @@ $creditosNoActivos = array_merge($creditosCompletados, $creditosCerrados);
         document.getElementById('grupoMoratorioCobro').style.display = cobroActual.puedeEditarMoratorio ? 'block' : 'none';
         document.getElementById('moratorioCobro').value = cobroActual.moratorioOriginal.toFixed(2);
         document.getElementById('ayudaMoratorioCobro').textContent = cobroActual.puedeEditarMoratorio ?
-            `Moratorio calculado: $${formatearMoneda(cobroActual.moratorioOriginal)}. Puedes reducirlo a 0 si corresponde.` :
+            `Moratorio calculado: $${formatearMoneda(cobroActual.moratorioOriginal)}. Puedes bajarlo o subirlo si corresponde.` :
             '';
         document.getElementById('grupoAbonoCapital').style.display = esMensual ? 'block' : 'none';
         document.getElementById('abonoCapitalCobro').value = '0';
@@ -1000,7 +1000,7 @@ $creditosNoActivos = array_merge($creditosCompletados, $creditosCerrados);
         if (moratorioInput && cobroActual.puedeEditarMoratorio) {
             const textoMoratorio = String(moratorioInput.value || '').trim().replace(',', '.');
             const moratorioEditable = textoMoratorio === '' ? 0 : Number(textoMoratorio);
-            cobroActual.moratorioCobro = Math.min(Math.max(0, moratorioEditable), cobroActual.moratorioOriginal);
+            cobroActual.moratorioCobro = Math.max(0, moratorioEditable);
             if (document.activeElement !== moratorioInput) {
                 moratorioInput.value = cobroActual.moratorioCobro.toFixed(2);
             }

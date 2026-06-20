@@ -1450,7 +1450,7 @@ class CreditosRepository
         }
 
         $moratorioManual = max(0, round($moratorioManual, 2));
-        return min($moratorioManual, $moratorioCalculado);
+        return $moratorioManual;
     }
 
     private function esTipoFlexible(string $tipo): bool

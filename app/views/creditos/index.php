@@ -762,7 +762,7 @@ if (!function_exists('avanzarFechaProgramadaCredito')) {
 
         document.getElementById('infoPagoCobroAdmin').textContent = `Crédito #${cobroAdminActual.idCredito} · Letra #${pago.numero_pago}`;
         document.getElementById('moratorioCobroAdmin').value = cobroAdminActual.moratorioOriginal.toFixed(2);
-        document.getElementById('ayudaMoratorioCobroAdmin').textContent = `Moratorio calculado: $${formatearMoneda(cobroAdminActual.moratorioOriginal)}. Puedes reducirlo a 0 si corresponde.`;
+        document.getElementById('ayudaMoratorioCobroAdmin').textContent = `Moratorio calculado: $${formatearMoneda(cobroAdminActual.moratorioOriginal)}. Puedes bajarlo o subirlo si corresponde.`;
         document.getElementById('montoCobroAdmin').value = cobroAdminActual.montoCobro.toFixed(2);
         document.getElementById('montoRecibidoCobroAdmin').value = '';
         document.getElementById('metodoPagoCobroAdmin').value = 'efectivo';
@@ -779,7 +779,7 @@ if (!function_exists('avanzarFechaProgramadaCredito')) {
     function actualizarCambioCobroAdmin() {
         const moratorioInput = document.getElementById('moratorioCobroAdmin');
         const moratorioEditable = Number(moratorioInput?.value || 0);
-        cobroAdminActual.moratorioCobro = Math.min(Math.max(0, moratorioEditable), cobroAdminActual.moratorioOriginal);
+        cobroAdminActual.moratorioCobro = Math.max(0, moratorioEditable);
 
         if (moratorioInput) {
             moratorioInput.value = cobroAdminActual.moratorioCobro.toFixed(2);
