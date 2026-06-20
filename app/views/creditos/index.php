@@ -675,7 +675,7 @@ if (!function_exists('avanzarFechaProgramadaCredito')) {
             </div>
             <div>
                 <label style="display:block; margin-bottom: 6px; color: var(--text-secondary); font-size: 12px;">Moratorio a cobrar</label>
-                <input id="moratorioCobroAdmin" type="number" step="0.01" min="0" value="0" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary);">
+                <input id="moratorioCobroAdmin" type="number" min="0" value="0" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary);">
                 <p id="ayudaMoratorioCobroAdmin" style="margin: 6px 0 0 0; color: var(--text-muted); font-size: 11px;"></p>
             </div>
             <div>
@@ -907,14 +907,6 @@ if (!function_exists('avanzarFechaProgramadaCredito')) {
             inputRecibidoAdmin.addEventListener('input', actualizarCambioCobroAdmin);
         }
 
-        const modalCobroAdmin = document.getElementById('modalCobroAdmin');
-        if (modalCobroAdmin) {
-            modalCobroAdmin.addEventListener('click', function(e) {
-                if (e.target === modalCobroAdmin) {
-                    cerrarModalCobroAdmin();
-                }
-            });
-        }
     });
 
     function inicializarBuscadorCreditosAdmin() {

@@ -323,7 +323,7 @@ $creditosNoActivos = array_merge($creditosCompletados, $creditosCerrados);
             </div>
             <div id="grupoMoratorioCobro" style="display: none;">
                 <label style="display:block; margin-bottom: 6px; color: var(--text-secondary); font-size: 12px;">Moratorio a cobrar</label>
-                <input id="moratorioCobro" type="number" step="0.01" min="0" value="0" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary);">
+                <input id="moratorioCobro" type="text" inputmode="decimal" value="0.00" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary);">
                 <p id="ayudaMoratorioCobro" style="margin: 6px 0 0 0; color: var(--text-muted); font-size: 11px;"></p>
             </div>
             <div id="grupoAbonoCapital" style="display: none;">
@@ -998,9 +998,12 @@ $creditosNoActivos = array_merge($creditosCompletados, $creditosCerrados);
     function actualizarCambioCobro() {
         const moratorioInput = document.getElementById('moratorioCobro');
         if (moratorioInput && cobroActual.puedeEditarMoratorio) {
-            const moratorioEditable = Number(moratorioInput.value || 0);
+            const textoMoratorio = String(moratorioInput.value || '').trim().replace(',', '.');
+            const moratorioEditable = textoMoratorio === '' ? 0 : Number(textoMoratorio);
             cobroActual.moratorioCobro = Math.min(Math.max(0, moratorioEditable), cobroActual.moratorioOriginal);
-            moratorioInput.value = cobroActual.moratorioCobro.toFixed(2);
+            if (document.activeElement !== moratorioInput) {
+                moratorioInput.value = cobroActual.moratorioCobro.toFixed(2);
+            }
         } else {
             cobroActual.moratorioCobro = cobroActual.moratorioOriginal;
         }
@@ -1171,14 +1174,12 @@ $creditosNoActivos = array_merge($creditosCompletados, $creditosCerrados);
             inputAbonoCapital.addEventListener('input', actualizarCambioCobro);
         }
 
-        const modal = document.getElementById('modalCobroPago');
-        if (modal) {
-            modal.addEventListener('click', function(e) {
-                if (e.target === modal) {
-                    cerrarModalCobro();
-                }
-            });
+        const inputMoratorio = document.getElementById('moratorioCobro');
+        if (inputMoratorio) {
+            inputMoratorio.addEventListener('input', actualizarCambioCobro);
+            inputMoratorio.addEventListener('blur', actualizarCambioCobro);
         }
+
     });
 
     /**
