@@ -383,6 +383,9 @@ class CreditosController
             $pagosRaw = $_POST['pagos'] ?? null;
             $montoRecibido = (float)($_POST['monto_recibido'] ?? 0);
             $abonoCapital = (float)($_POST['abono_capital'] ?? 0);
+            $moratorioManual = isset($_POST['moratorio_manual']) && $_POST['moratorio_manual'] !== ''
+                ? (float)$_POST['moratorio_manual']
+                : null;
             $metodoPago = strtolower(trim((string)($_POST['metodo_pago'] ?? 'efectivo')));
             $confirmarAnticipado = filter_var($_POST['confirmar_anticipado'] ?? false, FILTER_VALIDATE_BOOLEAN);
             $idCobratario = (int)($_SESSION['idpersona'] ?? 0);
@@ -427,6 +430,10 @@ class CreditosController
                 throw new Exception('El abono a capital no puede ser negativo');
             }
 
+            if ($moratorioManual !== null && $moratorioManual < 0) {
+                throw new Exception('El moratorio manual no puede ser negativo');
+            }
+
             $resultado = $this->creditosRepo->cobrarPagosCobratario(
                 $idPagos,
                 $idCredito,
@@ -436,7 +443,8 @@ class CreditosController
                 $confirmarAnticipado,
                 $esAdmin,
                 $abonoCapital,
-                $metodoPago
+                $metodoPago,
+                $moratorioManual
             );
 
             if (!empty($resultado['success']) && !empty($resultado['historial_ids'])) {

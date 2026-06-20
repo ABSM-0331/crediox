@@ -664,7 +664,7 @@ class CreditosRepository
     /**
      * Registrar cobro de una cuota para cobratario
      */
-    public function cobrarPagoCobratario(int $idPago, int $idCredito, int $idCobratario, float $montoRecibido, ?int $idUsuarioCobrador = null, bool $confirmarAnticipado = false, bool $esAdmin = false, string $metodoPago = 'efectivo'): array
+    public function cobrarPagoCobratario(int $idPago, int $idCredito, int $idCobratario, float $montoRecibido, ?int $idUsuarioCobrador = null, bool $confirmarAnticipado = false, bool $esAdmin = false, string $metodoPago = 'efectivo', ?float $moratorioManual = null): array
     {
         return $this->cobrarPagosCobratario(
             [$idPago],
@@ -675,14 +675,15 @@ class CreditosRepository
             $confirmarAnticipado,
             $esAdmin,
             0.0,
-            $metodoPago
+            $metodoPago,
+            $moratorioManual
         );
     }
 
     /**
      * Registrar cobro de una o varias cuotas para cobratario
      */
-    public function cobrarPagosCobratario(array $idPagos, int $idCredito, int $idCobratario, float $montoRecibido, ?int $idUsuarioCobrador = null, bool $confirmarAnticipado = false, bool $esAdmin = false, float $abonoCapital = 0.0, string $metodoPago = 'efectivo'): array
+    public function cobrarPagosCobratario(array $idPagos, int $idCredito, int $idCobratario, float $montoRecibido, ?int $idUsuarioCobrador = null, bool $confirmarAnticipado = false, bool $esAdmin = false, float $abonoCapital = 0.0, string $metodoPago = 'efectivo', ?float $moratorioManual = null): array
     {
         try {
             $idPagos = array_values(array_unique(array_filter(array_map('intval', $idPagos))));
@@ -717,6 +718,8 @@ class CreditosRepository
             $montoCobro = 0.0;
             $pagosAnticipados = [];
             $abonoCapital = max(0, round($abonoCapital, 2));
+            $permitirAjusteMoratorio = count($idPagos) === 1;
+            $moratorioManual = $moratorioManual !== null ? max(0, round($moratorioManual, 2)) : null;
 
             $esMensualFlexible = count($pagos) === 1 && $this->esTipoFlexible((string)($pagos[0]['tipo'] ?? ''));
             if ($esMensualFlexible && count($idPagos) > 1) {
@@ -744,7 +747,8 @@ class CreditosRepository
                     $hoy,
                     (string)($pago['estado'] ?? 'pendiente')
                 );
-                $montoBase = $this->redondearHaciaArribaPeso((float)$pago['monto_programado'] + $recargoMoratorio);
+                $moratorioAplicado = $this->ajustarMoratorioCobro($recargoMoratorio, $moratorioManual, $permitirAjusteMoratorio);
+                $montoBase = $this->redondearHaciaArribaPeso((float)$pago['monto_programado'] + $moratorioAplicado);
                 if ($esMensualFlexible) {
                     $montoBase = $this->redondearHaciaArribaPeso($montoBase + $abonoCapital);
                 }
@@ -803,7 +807,8 @@ class CreditosRepository
                     $hoy,
                     (string)($pago['estado'] ?? 'pendiente')
                 );
-                $montoPago = $this->redondearHaciaArribaPeso((float)$pago['monto_programado'] + $recargoMoratorio);
+                $moratorioAplicado = $this->ajustarMoratorioCobro($recargoMoratorio, $moratorioManual, $permitirAjusteMoratorio);
+                $montoPago = $this->redondearHaciaArribaPeso((float)$pago['monto_programado'] + $moratorioAplicado);
                 $esAnticipado = (new DateTime($pago['fecha_programada'])) > $hoy;
 
                 $abonoCapitalPago = 0.0;
@@ -828,7 +833,7 @@ class CreditosRepository
                     ':idcredito' => $idCredito,
                     ':fecha_pago' => $hoy->format('Y-m-d'),
                     ':monto_pagado' => $montoPago,
-                    ':interes_moratorio' => $recargoMoratorio,
+                    ':interes_moratorio' => $moratorioAplicado,
                     ':idusuario_cobrador' => $idUsuarioCobrador,
                     ':grupo_cobro' => $grupoCobro,
                     ':metodo_pago' => $metodoPago,
@@ -844,7 +849,7 @@ class CreditosRepository
                     'idpago' => (int)$pago['idpago'],
                     'numero_pago' => (int)$pago['numero_pago'],
                     'monto' => $montoPago,
-                    'moratorio' => $recargoMoratorio,
+                    'moratorio' => $moratorioAplicado,
                     'abono_capital' => $abonoCapitalPago,
                 ];
                 $historialIds[] = $idHistorial;
@@ -1076,6 +1081,7 @@ class CreditosRepository
                 'saldo_vivo' => (float)$resultado['saldo_vivo'],
                 'fue_vencida' => $fueVencida,
                 'recargo_moratorio' => round($recargoMoratorio, 2),
+                'moratorio_cobrado' => round($recargoMoratorio, 2),
             ];
         }
 
@@ -1433,6 +1439,18 @@ class CreditosRepository
                 'cobrosPendientesHoy' => 0,
             ];
         }
+    }
+
+    private function ajustarMoratorioCobro(float $moratorioCalculado, ?float $moratorioManual, bool $permitirAjuste): float
+    {
+        $moratorioCalculado = max(0, round($moratorioCalculado, 2));
+
+        if (!$permitirAjuste || $moratorioManual === null) {
+            return $moratorioCalculado;
+        }
+
+        $moratorioManual = max(0, round($moratorioManual, 2));
+        return min($moratorioManual, $moratorioCalculado);
     }
 
     private function esTipoFlexible(string $tipo): bool

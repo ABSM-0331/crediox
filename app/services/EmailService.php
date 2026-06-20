@@ -12,11 +12,11 @@ class EmailService
         }
 
         $from = trim((string)($options['from'] ?? $this->env('SMTP_FROM', 'no-reply@localhost')));
-        $fromName = trim((string)($options['from_name'] ?? $this->env('SMTP_FROM_NAME', 'Sistema de Creditos')));
+        $fromName = trim((string)($options['from_name'] ?? $this->env('SMTP_FROM_NAME', 'CrediOx')));
 
-        $host = trim((string)$this->env('SMTP_HOST', ''));
-        $user = trim((string)$this->env('SMTP_USER', ''));
-        $pass = trim((string)$this->env('SMTP_PASS', ''));
+        $host = trim((string)$this->env('SMTP_HOST', 'smtp.gmail.com'));
+        $user = trim((string)$this->env('SMTP_USER', 'crediox84@gmail.com'));
+        $pass = trim((string)$this->env('SMTP_PASS', 'zfvs lshp hjvu efxf'));
         $port = (int)$this->env('SMTP_PORT', '587');
         $encryption = strtolower(trim((string)$this->env('SMTP_ENCRYPTION', 'tls')));
         $smtpAuthRaw = strtolower(trim((string)$this->env('SMTP_AUTH', 'true')));

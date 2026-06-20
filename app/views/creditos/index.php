@@ -662,11 +662,228 @@ if (!function_exists('avanzarFechaProgramadaCredito')) {
     </div>
 </div>
 
+<!-- Modal para cobrar pago desde el admin -->
+<div id="modalCobroAdmin" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1200; align-items: center; justify-content: center;">
+    <div style="width: 100%; max-width: 460px; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 10px; padding: 18px;">
+        <h3 style="margin: 0 0 12px 0; color: var(--text-primary);">Registrar cobro</h3>
+        <p id="infoPagoCobroAdmin" style="margin: 0 0 14px 0; color: var(--text-secondary); font-size: 13px;"></p>
+
+        <div style="display: grid; gap: 10px;">
+            <div>
+                <label style="display:block; margin-bottom: 6px; color: var(--text-secondary); font-size: 12px;">Monto a cobrar</label>
+                <input id="montoCobroAdmin" type="number" step="0.01" readonly style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary);">
+            </div>
+            <div>
+                <label style="display:block; margin-bottom: 6px; color: var(--text-secondary); font-size: 12px;">Moratorio a cobrar</label>
+                <input id="moratorioCobroAdmin" type="number" step="0.01" min="0" value="0" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary);">
+                <p id="ayudaMoratorioCobroAdmin" style="margin: 6px 0 0 0; color: var(--text-muted); font-size: 11px;"></p>
+            </div>
+            <div>
+                <label style="display:block; margin-bottom: 6px; color: var(--text-secondary); font-size: 12px;">Efectivo recibido</label>
+                <input id="montoRecibidoCobroAdmin" type="number" step="0.01" min="0" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary);">
+            </div>
+            <div>
+                <label style="display:block; margin-bottom: 6px; color: var(--text-secondary); font-size: 12px;">Forma de pago</label>
+                <select id="metodoPagoCobroAdmin" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary);">
+                    <option value="efectivo">Efectivo</option>
+                    <option value="transferencia">Transferencia</option>
+                    <option value="tarjeta_debito">Tarjeta de débito</option>
+                    <option value="tarjeta_credito">Tarjeta de crédito</option>
+                </select>
+            </div>
+            <div>
+                <label style="display:block; margin-bottom: 6px; color: var(--text-secondary); font-size: 12px;">Cambio</label>
+                <input id="cambioCobroAdmin" type="text" readonly value="$0.00" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary); font-weight: 700;">
+            </div>
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; gap: 10px; margin-top: 14px;">
+            <button type="button" onclick="cerrarModalCobroAdmin()" class="btn-secondary">Cancelar</button>
+            <button type="button" id="btnConfirmarCobroAdmin" onclick="confirmarCobroPagoAdmin()" class="btn-primary">Confirmar cobro</button>
+        </div>
+    </div>
+</div>
+
 <script>
     // Datos del servidor
     const configuracionesData = <?= json_encode($configuraciones) ?>;
     const clientesData = <?= json_encode($clientes) ?>;
     const cobratariosData = <?= json_encode($cobratarios) ?>;
+    let pagosCreditoAdminActual = [];
+    let cobroAdminActual = {
+        idCredito: null,
+        idPago: null,
+        montoBaseCobro: 0,
+        moratorioOriginal: 0,
+        moratorioCobro: 0,
+        montoCobro: 0,
+        tieneAnticipado: false,
+    };
+
+    function obtenerPagoAdminPorId(idPago) {
+        return pagosCreditoAdminActual.find((pago) => Number(pago.idpago) === Number(idPago)) || null;
+    }
+
+    function obtenerMontoCobroPagoAdmin(pago) {
+        const montoActual = Number(pago.monto_cobro_actual || 0);
+        if (montoActual > 0) {
+            return montoActual;
+        }
+
+        const recargoMoratorio = Number(pago.recargo_moratorio || 0);
+        return Number(pago.monto_programado || 0) + recargoMoratorio;
+    }
+
+    function abrirModalCobroAdmin(idPago) {
+        const pago = obtenerPagoAdminPorId(idPago);
+        if (!pago) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'No se encontró la letra seleccionada.',
+                confirmButtonText: 'Aceptar'
+            });
+            return;
+        }
+
+        const montoBase = Number(pago.monto_programado || 0);
+        const moratorioOriginal = Number(pago.recargo_moratorio || 0);
+        const totalCobro = obtenerMontoCobroPagoAdmin(pago);
+        const fechaProgramada = new Date(`${pago.fecha_programada}T00:00:00`);
+        const anticipado = fechaProgramada > obtenerFechaHoySinHoraAdmin();
+
+        cobroAdminActual.idCredito = Number(pago.idcredito || cobroAdminActual.idCredito || 0);
+        cobroAdminActual.idPago = Number(pago.idpago);
+        cobroAdminActual.montoBaseCobro = montoBase;
+        cobroAdminActual.moratorioOriginal = moratorioOriginal;
+        cobroAdminActual.moratorioCobro = moratorioOriginal;
+        cobroAdminActual.montoCobro = totalCobro;
+        cobroAdminActual.tieneAnticipado = anticipado;
+
+        document.getElementById('infoPagoCobroAdmin').textContent = `Crédito #${cobroAdminActual.idCredito} · Letra #${pago.numero_pago}`;
+        document.getElementById('moratorioCobroAdmin').value = cobroAdminActual.moratorioOriginal.toFixed(2);
+        document.getElementById('ayudaMoratorioCobroAdmin').textContent = `Moratorio calculado: $${formatearMoneda(cobroAdminActual.moratorioOriginal)}. Puedes reducirlo a 0 si corresponde.`;
+        document.getElementById('montoCobroAdmin').value = cobroAdminActual.montoCobro.toFixed(2);
+        document.getElementById('montoRecibidoCobroAdmin').value = '';
+        document.getElementById('metodoPagoCobroAdmin').value = 'efectivo';
+        document.getElementById('cambioCobroAdmin').value = '$0.00';
+        document.getElementById('btnConfirmarCobroAdmin').disabled = true;
+        actualizarCambioCobroAdmin();
+        document.getElementById('modalCobroAdmin').style.display = 'flex';
+    }
+
+    function cerrarModalCobroAdmin() {
+        document.getElementById('modalCobroAdmin').style.display = 'none';
+    }
+
+    function actualizarCambioCobroAdmin() {
+        const moratorioInput = document.getElementById('moratorioCobroAdmin');
+        const moratorioEditable = Number(moratorioInput?.value || 0);
+        cobroAdminActual.moratorioCobro = Math.min(Math.max(0, moratorioEditable), cobroAdminActual.moratorioOriginal);
+
+        if (moratorioInput) {
+            moratorioInput.value = cobroAdminActual.moratorioCobro.toFixed(2);
+        }
+
+        cobroAdminActual.montoCobro = cobroAdminActual.montoBaseCobro + cobroAdminActual.moratorioCobro;
+
+        const recibido = Number(document.getElementById('montoRecibidoCobroAdmin').value || 0);
+        const cambio = recibido - cobroAdminActual.montoCobro;
+        const cambioInput = document.getElementById('cambioCobroAdmin');
+        const btnConfirmar = document.getElementById('btnConfirmarCobroAdmin');
+
+        document.getElementById('montoCobroAdmin').value = cobroAdminActual.montoCobro.toFixed(2);
+        cambioInput.value = `$${formatearMoneda(cambio)}`;
+        cambioInput.style.color = cambio < 0 ? 'rgb(239, 68, 68)' : 'rgb(34, 197, 94)';
+        btnConfirmar.disabled = recibido < cobroAdminActual.montoCobro;
+    }
+
+    function confirmarCobroPagoAdmin() {
+        const montoRecibido = Number(document.getElementById('montoRecibidoCobroAdmin').value || 0);
+        const metodoPago = document.getElementById('metodoPagoCobroAdmin').value;
+
+        if (!metodoPago) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Forma de pago requerida',
+                text: 'Selecciona la forma de pago antes de continuar.',
+                confirmButtonText: 'Aceptar'
+            });
+            return;
+        }
+
+        if (montoRecibido < cobroAdminActual.montoCobro) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Monto insuficiente',
+                text: 'El efectivo recibido debe cubrir al menos el monto del pago.',
+                confirmButtonText: 'Aceptar'
+            });
+            return;
+        }
+
+        const enviarCobro = (confirmarAnticipado) => {
+            const formData = new FormData();
+            formData.append('idcredito', cobroAdminActual.idCredito);
+            formData.append('idpago', cobroAdminActual.idPago);
+            formData.append('pagos', JSON.stringify([cobroAdminActual.idPago]));
+            formData.append('monto_recibido', montoRecibido.toFixed(2));
+            formData.append('abono_capital', '0.00');
+            formData.append('moratorio_manual', cobroAdminActual.moratorioCobro.toFixed(2));
+            formData.append('confirmar_anticipado', confirmarAnticipado ? '1' : '0');
+            formData.append('metodo_pago', metodoPago);
+
+            fetch('/panel/public/creditos/cobrar', {
+                    method: 'POST',
+                    body: formData,
+                })
+                .then((response) => response.json())
+                .then((data) => {
+                    if (!data.success) {
+                        throw new Error(data.mensaje || 'No se pudo registrar el cobro');
+                    }
+
+                    const ticketUrl = data.ticket_url || '';
+                    const ticketTexto = ticketUrl ? `<br><small><a href="${ticketUrl}" target="_blank" rel="noopener">Ver ticket del cobro</a></small>` : '';
+                    cerrarModalCobroAdmin();
+
+                    Swal.fire({
+                        title: 'Cobro registrado',
+                        html: `${data.mensaje || 'Cobro registrado correctamente.'}${ticketTexto}`,
+                        icon: 'success',
+                        confirmButtonText: 'OK'
+                    }).then(() => {
+                        window.location.reload();
+                    });
+                })
+                .catch((error) => {
+                    Swal.fire({
+                        title: 'Error',
+                        text: error.message,
+                        icon: 'error',
+                        confirmButtonText: 'Aceptar'
+                    });
+                });
+        };
+
+        if (cobroAdminActual.tieneAnticipado) {
+            Swal.fire({
+                title: 'Confirmar cobro anticipado',
+                text: 'Estás por cobrar una letra antes de su fecha programada. ¿Deseas continuar?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, cobrar',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    enviarCobro(true);
+                }
+            });
+            return;
+        }
+
+        enviarCobro(false);
+    }
 
     // Ejecutar configuración inicial
     document.addEventListener('DOMContentLoaded', function() {
@@ -679,6 +896,25 @@ if (!function_exists('avanzarFechaProgramadaCredito')) {
         <?php endif; ?>
 
         inicializarBuscadorCreditosAdmin();
+
+        const inputMoratorioAdmin = document.getElementById('moratorioCobroAdmin');
+        if (inputMoratorioAdmin) {
+            inputMoratorioAdmin.addEventListener('input', actualizarCambioCobroAdmin);
+        }
+
+        const inputRecibidoAdmin = document.getElementById('montoRecibidoCobroAdmin');
+        if (inputRecibidoAdmin) {
+            inputRecibidoAdmin.addEventListener('input', actualizarCambioCobroAdmin);
+        }
+
+        const modalCobroAdmin = document.getElementById('modalCobroAdmin');
+        if (modalCobroAdmin) {
+            modalCobroAdmin.addEventListener('click', function(e) {
+                if (e.target === modalCobroAdmin) {
+                    cerrarModalCobroAdmin();
+                }
+            });
+        }
     });
 
     function inicializarBuscadorCreditosAdmin() {
@@ -1354,6 +1590,8 @@ if (!function_exists('avanzarFechaProgramadaCredito')) {
         const saldoPendiente = parseFloat(credito.saldo_pendiente);
         const pagado = totalPagar - saldoPendiente;
         const interes = totalPagar - montoOriginal;
+        pagosCreditoAdminActual = Array.isArray(pagos) ? pagos : [];
+        cobroAdminActual.idCredito = credito.idcredito;
 
         // Determinar el label del pago según el tipo
         const labelPago = `Pago ${formatearTipoCreditoTextoJS(credito.tipo).toLowerCase()}`;
@@ -1402,6 +1640,7 @@ if (!function_exists('avanzarFechaProgramadaCredito')) {
                             <th style="padding: 10px 5px;">Pago</th>
                             <th style="padding: 10px 5px;">Saldo Final</th>
                             <th style="padding: 10px 5px;">Estado</th>
+                            <th style="padding: 10px 5px;">Cobro</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -1429,6 +1668,10 @@ if (!function_exists('avanzarFechaProgramadaCredito')) {
             // Calcular saldo inicial (saldo vivo + capital programado)
             const saldoInicial = parseFloat(pago.saldo_vivo) + parseFloat(pago.capital_programado);
             const estiloFila = obtenerEstiloFilaPagoAdmin(pago);
+            const puedeCobrar = ['pendiente', 'vencido', 'atrasado'].includes(estadoPago);
+            const accionCobro = puedeCobrar ?
+                `<button type="button" onclick="abrirModalCobroAdmin(${pago.idpago})" style="padding: 6px 10px; background: rgb(34, 197, 94); color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600;">Cobrar</button>` :
+                '<span style="color: var(--text-muted); font-size: 11px;">-</span>';
 
             tablaHTML += `
                 <tr style="border-bottom: 1px solid var(--border-color); ${estiloFila}">
@@ -1440,6 +1683,7 @@ if (!function_exists('avanzarFechaProgramadaCredito')) {
                     <td style="padding: 8px 5px; font-weight: 600;">$${formatearMoneda(pago.monto_programado)}</td>
                     <td style="padding: 8px 5px;">$${formatearMoneda(pago.saldo_vivo)}</td>
                     <td style="padding: 8px 5px; text-align: center;">${estadoBadge}</td>
+                    <td style="padding: 8px 5px; text-align: center;">${accionCobro}</td>
                 </tr>
             `;
         });

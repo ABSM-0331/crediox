@@ -48,7 +48,7 @@ foreach ($pagos as $pago) {
     $numeroPago = (int)($pago['numero_pago'] ?? 0);
     $fechaPagoProgramada = (string)($pago['fecha_programada_formateada'] ?? $pago['fecha_programada'] ?? '');
     $montoPagadoItem = (float)($pago['monto_pagado'] ?? 0);
-    $moratorioPago = (float)($pago['recargo_moratorio'] ?? 0);
+    $moratorioPago = (float)($pago['moratorio_cobrado'] ?? $pago['recargo_moratorio'] ?? 0);
     $valorLetra = (float)($pago['monto_programado'] ?? max(0, $montoPagadoItem - $moratorioPago));
     $totalConMoratorio = $valorLetra + $moratorioPago;
 

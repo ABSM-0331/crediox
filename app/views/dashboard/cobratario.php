@@ -321,6 +321,11 @@ $creditosNoActivos = array_merge($creditosCompletados, $creditosCerrados);
                 <label style="display:block; margin-bottom: 6px; color: var(--text-secondary); font-size: 12px;">Monto a cobrar</label>
                 <input id="montoCobro" type="number" step="0.01" readonly style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary);">
             </div>
+            <div id="grupoMoratorioCobro" style="display: none;">
+                <label style="display:block; margin-bottom: 6px; color: var(--text-secondary); font-size: 12px;">Moratorio a cobrar</label>
+                <input id="moratorioCobro" type="number" step="0.01" min="0" value="0" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary);">
+                <p id="ayudaMoratorioCobro" style="margin: 6px 0 0 0; color: var(--text-muted); font-size: 11px;"></p>
+            </div>
             <div id="grupoAbonoCapital" style="display: none;">
                 <label style="display:block; margin-bottom: 6px; color: var(--text-secondary); font-size: 12px;">Abono a capital (opcional)</label>
                 <input id="abonoCapitalCobro" type="number" step="0.01" min="0" value="0" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary);">
@@ -358,9 +363,12 @@ $creditosNoActivos = array_merge($creditosCompletados, $creditosCerrados);
         pagosSeleccionados: [],
         tipoCredito: '',
         montoBaseCobro: 0,
+        moratorioOriginal: 0,
+        moratorioCobro: 0,
         abonoCapital: 0,
         montoCobro: 0,
         tieneAnticipados: false,
+        puedeEditarMoratorio: false,
     };
     let pagosCreditoActual = [];
 
@@ -439,6 +447,11 @@ $creditosNoActivos = array_merge($creditosCompletados, $creditosCerrados);
     document.addEventListener('DOMContentLoaded', function() {
         navegarSeccionCobratarioPorHash();
         inicializarBuscadorCreditosCobratario();
+
+        const inputMoratorio = document.getElementById('moratorioCobro');
+        if (inputMoratorio) {
+            inputMoratorio.addEventListener('input', actualizarCambioCobro);
+        }
     });
     window.addEventListener('hashchange', navegarSeccionCobratarioPorHash);
 
@@ -699,11 +712,12 @@ $creditosNoActivos = array_merge($creditosCompletados, $creditosCerrados);
 
     function abrirModalCobro(idCredito, pagosSeleccionados) {
         const pagos = Array.isArray(pagosSeleccionados) ? pagosSeleccionados : [];
-        const totalBaseCobro = pagos.reduce((acumulado, pago) => acumulado + obtenerMontoCobroPago(pago), 0);
+        const totalBaseCobro = pagos.reduce((acumulado, pago) => acumulado + Number(pago.monto_programado || 0), 0);
         const pagosAnticipados = pagos.filter((pago) => esPagoAnticipado(pago));
         const esMensual = (pagos[0]?.tipo || '').toLowerCase() === 'mensual';
         const saldoVivo = Number(pagos[0]?.saldo_vivo || 0);
         const interesMensual = Number(pagos[0]?.interes_programado || 0);
+        const moratorioTotal = pagos.reduce((acumulado, pago) => acumulado + Number(pago.recargo_moratorio || 0), 0);
         const detallePagos = pagos
             .map((pago) => {
                 const recargo = Number(pago.recargo_moratorio || 0);
@@ -716,9 +730,12 @@ $creditosNoActivos = array_merge($creditosCompletados, $creditosCerrados);
         cobroActual.pagosSeleccionados = pagos.map((pago) => Number(pago.idpago));
         cobroActual.tipoCredito = (pagos[0]?.tipo || '').toLowerCase();
         cobroActual.montoBaseCobro = Number(totalBaseCobro || 0);
+        cobroActual.moratorioOriginal = Number(moratorioTotal || 0);
+        cobroActual.moratorioCobro = Number(moratorioTotal || 0);
         cobroActual.abonoCapital = 0;
-        cobroActual.montoCobro = Number(totalBaseCobro || 0);
+        cobroActual.montoCobro = Number(totalBaseCobro || 0) + cobroActual.moratorioCobro;
         cobroActual.tieneAnticipados = pagosAnticipados.length > 0;
+        cobroActual.puedeEditarMoratorio = pagos.length === 1;
 
         document.getElementById('infoPagoCobro').textContent = pagos.length === 1 ?
             `Crédito #${idCredito} · Letra #${pagos[0].numero_pago}` :
@@ -728,6 +745,11 @@ $creditosNoActivos = array_merge($creditosCompletados, $creditosCerrados);
         document.getElementById('alertaCobroAnticipado').style.display = cobroActual.tieneAnticipados ? 'block' : 'none';
         document.getElementById('alertaCobroAnticipado').textContent = cobroActual.tieneAnticipados ?
             `Se cobrarán ${pagosAnticipados.length} letra(s) antes de su fecha programada. Al continuar se te pedirá confirmación.` :
+            '';
+        document.getElementById('grupoMoratorioCobro').style.display = cobroActual.puedeEditarMoratorio ? 'block' : 'none';
+        document.getElementById('moratorioCobro').value = cobroActual.moratorioOriginal.toFixed(2);
+        document.getElementById('ayudaMoratorioCobro').textContent = cobroActual.puedeEditarMoratorio ?
+            `Moratorio calculado: $${formatearMoneda(cobroActual.moratorioOriginal)}. Puedes reducirlo a 0 si corresponde.` :
             '';
         document.getElementById('grupoAbonoCapital').style.display = esMensual ? 'block' : 'none';
         document.getElementById('abonoCapitalCobro').value = '0';
@@ -739,6 +761,7 @@ $creditosNoActivos = array_merge($creditosCompletados, $creditosCerrados);
         document.getElementById('metodoPagoCobro').value = 'efectivo';
         document.getElementById('cambioCobro').value = '$0.00';
         document.getElementById('btnConfirmarCobro').disabled = true;
+        actualizarCambioCobro();
         document.getElementById('modalCobroPago').style.display = 'flex';
     }
 
@@ -973,9 +996,18 @@ $creditosNoActivos = array_merge($creditosCompletados, $creditosCerrados);
     }
 
     function actualizarCambioCobro() {
+        const moratorioInput = document.getElementById('moratorioCobro');
+        if (moratorioInput && cobroActual.puedeEditarMoratorio) {
+            const moratorioEditable = Number(moratorioInput.value || 0);
+            cobroActual.moratorioCobro = Math.min(Math.max(0, moratorioEditable), cobroActual.moratorioOriginal);
+            moratorioInput.value = cobroActual.moratorioCobro.toFixed(2);
+        } else {
+            cobroActual.moratorioCobro = cobroActual.moratorioOriginal;
+        }
+
         const abonoCapital = Number(document.getElementById('abonoCapitalCobro')?.value || 0);
         cobroActual.abonoCapital = Math.max(0, abonoCapital);
-        cobroActual.montoCobro = cobroActual.montoBaseCobro + (cobroActual.tipoCredito === 'mensual' ? cobroActual.abonoCapital : 0);
+        cobroActual.montoCobro = cobroActual.montoBaseCobro + cobroActual.moratorioCobro + (cobroActual.tipoCredito === 'mensual' ? cobroActual.abonoCapital : 0);
 
         const recibido = Number(document.getElementById('montoRecibidoCobro').value || 0);
         const cambio = recibido - cobroActual.montoCobro;
@@ -1018,6 +1050,9 @@ $creditosNoActivos = array_merge($creditosCompletados, $creditosCerrados);
             formData.append('pagos', JSON.stringify(cobroActual.pagosSeleccionados));
             formData.append('monto_recibido', montoRecibido.toFixed(2));
             formData.append('abono_capital', (cobroActual.tipoCredito === 'mensual' ? cobroActual.abonoCapital : 0).toFixed(2));
+            if (cobroActual.puedeEditarMoratorio) {
+                formData.append('moratorio_manual', cobroActual.moratorioCobro.toFixed(2));
+            }
             formData.append('confirmar_anticipado', confirmarAnticipado ? '1' : '0');
             formData.append('metodo_pago', metodoPago);
 
